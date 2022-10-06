@@ -1,6 +1,7 @@
 Objects = {}
 
 local xml2lua = require('xml2lua')
+local handler = require("xmlhandler.tree")
 
 Objects.store = {
 	items = {},
@@ -106,6 +107,27 @@ local function objArray(objtype,camdes,x,y,visible)
 	return newsprite
 end
 
+local function xmlTable(xml,image)
+	local parser = xml2lua.parser(handler)
+	parser:parse(xml)
+	if not (handler.root.TextureAtlas and handler.root.TextureAtlas.SubTexture) then return end 
+
+	local quads = {}
+
+	for i,v in pairs(handler.root.TextureAtlas) do
+		local num = strsub(v,#v-3,#v).tonumber()
+		if num then
+			local name = strsub(v._attr.name,1,#v-3)
+
+			local daquad = love.graphics.newQuad()
+
+			if not quads[name] then
+				quads[name] = {[num]={quad = daquad, }}
+			end
+		end
+	end
+end
+
 local function removeObj(tag)
 	if not Objects.store.reserve[tag] and Objects.store.items[tag] then
 		local copy = Objects.store.items[tag]
@@ -155,18 +177,23 @@ function Objects.draw()
 				love.graphics.scale((camobj.scale)*scaler)
 				love.graphics.rotate(camobj.angle)
 			end
+			
 			if obj.inst then
 				if obj.type == 'sprite' then
-					if love.filesystem.isFile(obj.inst) then
-						instance = 
+					if love.filesystem.getInfo(obj.inst) then
+						instance = missing
 					else
 						instance = missing
 					end
 				end
-			else
-				instance = missing
 			end
-			love.graphics.draw(instance,(obj.pos.x-camobj.position.x)*obj.scrollFactor.x,(obj.pos.y-camobj.position.y)*obj.scrollFactor.y,obj.angle,obj.scale.x,obj.scale.y)
+			if not inst then instance = missing end
+			local trans = love.math.newTransform((obj.pos.x-camobj.position.x)*obj.scrollFactor.x,(obj.pos.y-camobj.position.y)*obj.scrollFactor.y,obj.angle,obj.scale.x,obj.scale.y)
+			if obj.type == 'sprite' then
+				love.graphics.draw(instance,trans)
+			else
+				love.graphics.draw(instance,trans)
+			end
 		end
 	end
 	love.graphics.pop()
