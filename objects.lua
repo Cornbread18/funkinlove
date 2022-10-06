@@ -110,19 +110,22 @@ end
 local function xmlTable(xml,image)
 	local parser = xml2lua.parser(handler)
 	parser:parse(xml)
-	if not (handler.root.TextureAtlas and handler.root.TextureAtlas.SubTexture) then return end 
+	if not (image and (handler.root.TextureAtlas and handler.root.TextureAtlas.SubTexture)) then return end 
 
 	local quads = {}
 
 	for i,v in pairs(handler.root.TextureAtlas) do
-		local num = strsub(v,#v-3,#v).tonumber()
+		local num = tonumber(strsub(v._attr.name,#v-3,#v))
 		if num then
-			local name = strsub(v._attr.name,1,#v-3)
+			local props = v._attr
+			local name = strsub(props.name,1,#v-3)
 
-			local daquad = love.graphics.newQuad()
-
-			if not quads[name] then
-				quads[name] = {[num]={quad = daquad, }}
+			local daquad = love.graphics.newQuad(tonumber(props.x),tonumber(props.y),tonumber(props.width),tonumber(props.height),image)
+			
+			if quads[name] then
+				quads[name][num]={quad = daquad,fx = props.frameX, fy = props.frameY}
+			else
+				quads[name] = {[num]={quad = daquad,fx = props.frameX, fy = props.frameY}}
 			end
 		end
 	end
